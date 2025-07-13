@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { supabase } from '../lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
+import type { User, Session, AuthError } from '@supabase/supabase-js'
 import type { Database } from '../lib/supabase'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
@@ -21,106 +21,50 @@ export interface SignUpCredentials {
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
-  const profile = ref<Profile | null>(null)
   const session = ref<Session | null>(null)
+  const profile = ref<Profile | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const isInitialized = ref(false)
 
   // Computed
   const isAuthenticated = computed(() => !!user.value && !!session.value)
-  const isAdmin = computed(() => profile.value?.role === 'admin')
+  const userRole = computed(() => profile.value?.role || 'member')
   const userCredits = computed(() => ({
     used: profile.value?.credits_used || 0,
-    total: profile.value?.credits_total || 1000
+    total: profile.value?.credits_total || 100
   }))
 
   // Actions
-  const login = async (credentials: LoginCredentials) => {
-    isLoading.value = true
-    error.value = null
-    
+  const initializeAuth = async () => {
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password
-      })
-
-      if (authError) {
-        throw authError
-      }
-
-      if (data.user && data.session) {
-        user.value = data.user
-        session.value = data.session
-        
-        // Fetch user profile
-        await fetchProfile()
-        
-        // Store session if remember me is checked
-        if (credentials.rememberMe) {
-          localStorage.setItem('supabase.auth.token', data.session.access_token)
-        }
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Login failed'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const signUp = async (credentials: SignUpCredentials) => {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: credentials.email,
-        password: credentials.password,
-        options: {
-          data: {
-            full_name: credentials.fullName
-          }
-        }
-      })
-
-      if (authError) {
-        throw authError
-      }
-
-      if (data.user && data.session) {
-        user.value = data.user
-        session.value = data.session
-        await fetchProfile()
-      }
-
-      return data
-    } catch (err: any) {
-      error.value = err.message || 'Sign up failed'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const logout = async () => {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const { error: authError } = await supabase.auth.signOut()
+      isLoading.value = true
       
-      if (authError) {
-        throw authError
+      // Get initial session
+      const { data: { session: initialSession } } = await supabase.auth.getSession()
+      
+      if (initialSession) {
+        session.value = initialSession
+        user.value = initialSession.user
+        await fetchProfile()
       }
 
-      user.value = null
-      profile.value = null
-      session.value = null
-      localStorage.removeItem('supabase.auth.token')
-    } catch (err: any) {
-      error.value = err.message || 'Logout failed'
-      throw err
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        session.value = newSession
+        user.value = newSession?.user || null
+        
+        if (newSession?.user) {
+          await fetchProfile()
+        } else {
+          profile.value = null
+        }
+      })
+
+      isInitialized.value = true
+    } catch (err) {
+      console.error('Auth initialization error:', err)
+      error.value = 'Failed to initialize authentication'
     } finally {
       isLoading.value = false
     }
@@ -137,26 +81,132 @@ export const useAuthStore = defineStore('auth', () => {
         .single()
 
       if (profileError) {
-        throw profileError
+        console.error('Profile fetch error:', profileError)
+        return
       }
 
       profile.value = data
-    } catch (err: any) {
-      console.error('Error fetching profile:', err.message)
-      error.value = err.message
+    } catch (err) {
+      console.error('Profile fetch error:', err)
+    }
+  }
+
+  const login = async (credentials: LoginCredentials) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      })
+
+      if (loginError) {
+        throw loginError
+      }
+
+      // Session and user will be set by the auth state change listener
+      return { success: true }
+    } catch (err) {
+      const authError = err as AuthError
+      error.value = authError.message || 'Login failed'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const signUp = async (credentials: SignUpCredentials) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            full_name: credentials.fullName
+          }
+        }
+      })
+
+      if (signUpError) {
+        throw signUpError
+      }
+
+      return { success: true, user: data.user }
+    } catch (err) {
+      const authError = err as AuthError
+      error.value = authError.message || 'Sign up failed'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const logout = async () => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const { error: logoutError } = await supabase.auth.signOut()
+
+      if (logoutError) {
+        throw logoutError
+      }
+
+      // Clear local state
+      user.value = null
+      session.value = null
+      profile.value = null
+
+      return { success: true }
+    } catch (err) {
+      const authError = err as AuthError
+      error.value = authError.message || 'Logout failed'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const resetPassword = async (email: string) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+
+      if (resetError) {
+        throw resetError
+      }
+
+      return { success: true }
+    } catch (err) {
+      const authError = err as AuthError
+      error.value = authError.message || 'Password reset failed'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
     }
   }
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user.value) return
-
-    isLoading.value = true
-    error.value = null
+    if (!user.value) return { success: false, error: 'Not authenticated' }
 
     try {
+      isLoading.value = true
+      error.value = null
+
       const { data, error: updateError } = await supabase
         .from('profiles')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.value.id)
         .select()
         .single()
@@ -166,84 +216,42 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       profile.value = data
-    } catch (err: any) {
-      error.value = err.message || 'Profile update failed'
-      throw err
+      return { success: true, profile: data }
+    } catch (err) {
+      console.error('Profile update error:', err)
+      error.value = 'Failed to update profile'
+      return { success: false, error: error.value }
     } finally {
       isLoading.value = false
     }
   }
 
-  const resetPassword = async (email: string) => {
-    isLoading.value = true
+  const clearError = () => {
     error.value = null
-
-    try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      })
-
-      if (resetError) {
-        throw resetError
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Password reset failed'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession()
-      
-      if (currentSession) {
-        user.value = currentSession.user
-        session.value = currentSession
-        await fetchProfile()
-      }
-    } catch (err: any) {
-      console.error('Error checking auth:', err.message)
-    }
-  }
-
-  // Initialize auth state listener
-  const initializeAuth = () => {
-    supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      if (event === 'SIGNED_IN' && currentSession) {
-        user.value = currentSession.user
-        session.value = currentSession
-        await fetchProfile()
-      } else if (event === 'SIGNED_OUT') {
-        user.value = null
-        profile.value = null
-        session.value = null
-      }
-    })
   }
 
   return {
     // State
-    user,
-    profile,
-    session,
-    isLoading,
-    error,
+    user: readonly(user),
+    session: readonly(session),
+    profile: readonly(profile),
+    isLoading: readonly(isLoading),
+    error: readonly(error),
+    isInitialized: readonly(isInitialized),
     
     // Computed
     isAuthenticated,
-    isAdmin,
+    userRole,
     userCredits,
     
     // Actions
+    initializeAuth,
+    fetchProfile,
     login,
     signUp,
     logout,
-    fetchProfile,
-    updateProfile,
     resetPassword,
-    checkAuth,
-    initializeAuth
+    updateProfile,
+    clearError
   }
 })

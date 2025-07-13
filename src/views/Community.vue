@@ -233,7 +233,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   Home,
   Users,
@@ -260,9 +259,6 @@ import {
   MessageSquare,
   Calendar
 } from 'lucide-vue-next'
-
-// Router
-const router = useRouter()
 
 // State
 const showUserMenu = ref(false)
@@ -406,8 +402,7 @@ const visitCommunity = (community: Community) => {
 const customizeCommunity = (community: Community) => {
   console.log('Customizing community:', community.name)
   community.showActions = false
-  // Navigate to customize community page
-  router.push(`/community/${community.id}/customize`)
+  // TODO: Open customization panel
 }
 
 const cloneCommunity = (community: Community) => {

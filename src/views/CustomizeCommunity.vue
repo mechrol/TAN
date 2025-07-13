@@ -113,10 +113,6 @@
         </div>
         
         <div class="page-actions">
-          <router-link to="/community" class="back-btn">
-            <ArrowLeft class="back-icon" />
-            Back to Community
-          </router-link>
           <button class="preview-btn" @click="handlePreview">
             <Eye class="preview-icon" />
             Preview
@@ -125,46 +121,6 @@
             <Save class="save-icon" />
             Save Changes
           </button>
-        </div>
-      </div>
-
-      <!-- Community Info Header -->
-      <div class="community-info-header">
-        <div class="community-image">
-          <img :src="communityData.image" :alt="communityData.name" />
-        </div>
-        <div class="community-details">
-          <h2 class="community-name">{{ communityData.name }}</h2>
-          <p class="community-category">{{ communityData.category }}</p>
-          <div class="community-stats">
-            <div class="stat-item">
-              <BookOpen class="stat-icon" />
-              <span class="stat-value">2</span>
-              <span class="stat-label">Courses</span>
-            </div>
-            <div class="stat-item">
-              <Users class="stat-icon" />
-              <span class="stat-value">2</span>
-              <span class="stat-label">Members</span>
-            </div>
-            <div class="stat-item">
-              <Users class="stat-icon" />
-              <span class="stat-value">2</span>
-              <span class="stat-label">Groups</span>
-            </div>
-          </div>
-        </div>
-        <div class="community-actions">
-          <button class="visit-btn">
-            <ExternalLink class="visit-icon" />
-            Visit
-          </button>
-          <div class="settings-dropdown">
-            <button class="settings-btn">
-              Settings
-              <ChevronDown class="settings-chevron" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -469,7 +425,7 @@
                     <img v-if="customization.logo" :src="customization.logo" alt="Logo" class="mock-logo-img" />
                     <div v-else class="mock-logo-placeholder">🤖</div>
                     <div class="mock-brand">
-                      <div class="mock-name">{{ customization.communityName || communityData.name }}</div>
+                      <div class="mock-name">{{ customization.communityName || 'Community Name' }}</div>
                       <div class="mock-tagline">{{ customization.tagline || 'Community tagline' }}</div>
                     </div>
                   </div>
@@ -554,7 +510,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import {
   Home,
   Users,
@@ -572,10 +527,8 @@ import {
   Languages,
   LogOut,
   Palette,
-  ArrowLeft,
   Eye,
   Save,
-  ExternalLink,
   Image,
   Upload,
   Layout,
@@ -584,20 +537,9 @@ import {
   Smartphone
 } from 'lucide-vue-next'
 
-// Route
-const route = useRoute()
-
 // State
 const showUserMenu = ref(false)
 const previewDevice = ref('desktop')
-
-// Get community data based on route parameter
-const communityData = ref({
-  id: route.params.id as string,
-  name: 'Homohumanicus',
-  category: 'Health and Wellness',
-  image: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-})
 
 interface CustomizationSettings {
   primaryColor: string
@@ -624,8 +566,8 @@ const customization = ref<CustomizationSettings>({
   secondaryColor: '#1d4ed8',
   backgroundStyle: 'solid',
   logo: '',
-  communityName: '',
-  tagline: '',
+  communityName: 'AI Communication Hub',
+  tagline: 'Connect, Learn, and Grow Together',
   headerStyle: 'standard',
   sidebarPosition: 'both',
   postLayout: 'card',
@@ -941,7 +883,6 @@ onMounted(() => {
   gap: 12px;
 }
 
-.back-btn,
 .preview-btn,
 .save-btn {
   display: flex;
@@ -953,17 +894,6 @@ onMounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  text-decoration: none;
-}
-
-.back-btn {
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-
-.back-btn:hover {
-  background: #f8fafc;
 }
 
 .preview-btn {
@@ -985,109 +915,8 @@ onMounted(() => {
   background: #2563eb;
 }
 
-.back-icon,
 .preview-icon,
 .save-icon {
-  width: 16px;
-  height: 16px;
-}
-
-/* Community Info Header */
-.community-info-header {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 32px;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.community-image {
-  width: 120px;
-  height: 80px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.community-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.community-details {
-  flex: 1;
-}
-
-.community-name {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 8px 0;
-}
-
-.community-category {
-  color: #64748b;
-  margin: 0 0 16px 0;
-}
-
-.community-stats {
-  display: flex;
-  gap: 24px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stat-icon {
-  width: 16px;
-  height: 16px;
-  color: #3b82f6;
-}
-
-.stat-value {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.stat-label {
-  color: #64748b;
-  font-size: 14px;
-}
-
-.community-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.visit-btn,
-.settings-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: white;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.visit-btn:hover,
-.settings-btn:hover {
-  background: #f8fafc;
-}
-
-.visit-icon,
-.settings-chevron {
   width: 16px;
   height: 16px;
 }
@@ -1730,19 +1559,9 @@ onMounted(() => {
     justify-content: stretch;
   }
   
-  .back-btn,
   .preview-btn,
   .save-btn {
     flex: 1;
-  }
-  
-  .community-info-header {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .community-stats {
-    justify-content: center;
   }
   
   .layout-options {
