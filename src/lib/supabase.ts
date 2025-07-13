@@ -8,3 +8,45 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          avatar_url: string | null
+          role: 'admin' | 'member' | 'moderator'
+          credits_used: number
+          credits_total: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: 'admin' | 'member' | 'moderator'
+          credits_used?: number
+          credits_total?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: 'admin' | 'member' | 'moderator'
+          credits_used?: number
+          credits_total?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+  }
+}
