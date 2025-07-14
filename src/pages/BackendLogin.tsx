@@ -1,250 +1,202 @@
 import React, { useState } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { 
+  MessageSquare, 
   Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  Shield,
+  EyeOff,
+  User,
+  Lock,
   ArrowRight,
-  AlertCircle,
-  Settings,
-  BarChart3,
-  Database
+  AlertCircle
 } from 'lucide-react'
 
-const BackendLogin: React.FC = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { login, isLoading } = useAuth()
-  
+const BackendLogin = () => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { signIn, loading } = useAuth()
 
-  const from = location.state?.from?.pathname || '/admin/dashboard'
+  const from = location.state?.from?.pathname || '/dashboard'
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    if (error) setError('')
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     try {
-      const success = await login(formData.email, formData.password, 'backend')
-      
-      if (success) {
-        navigate(from, { replace: true })
-      } else {
-        setError('Invalid administrator credentials. Please check your email and password.')
-      }
-    } catch (error) {
-      setError('Authentication failed. Please try again.')
-      console.error('Admin authentication error:', error)
+      await signIn(email, password)
+      navigate(from, { replace: true })
+    } catch (error: any) {
+      console.error('Login error:', error)
+      setError(error.message || 'Failed to sign in. Please check your credentials.')
     }
   }
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500 rounded-full opacity-10 animate-pulse"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-purple-500 rounded-full opacity-10 animate-pulse delay-1000"></div>
-        <div className="absolute bottom-32 left-40 w-40 h-40 bg-indigo-500 rounded-full opacity-5 animate-pulse delay-2000"></div>
-        <div className="absolute bottom-20 right-20 w-28 h-28 bg-cyan-500 rounded-full opacity-10 animate-pulse delay-500"></div>
-      </div>
-
-      {/* Main Login Container */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Logo/Brand Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            AITribes Admin
-          </h1>
-          <p className="text-sm text-gray-400 uppercase tracking-wide font-medium">
-            ADMINISTRATION PANEL
-          </p>
-          <div className="flex items-center justify-center space-x-4 mt-2 text-xs text-gray-500">
-            <div className="flex items-center space-x-1">
-              <Settings className="w-3 h-3" />
-              <span>Manage</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <BarChart3 className="w-3 h-3" />
-              <span>Analyze</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Database className="w-3 h-3" />
-              <span>Control</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Illustration */}
+        <div className="hidden lg:flex flex-col items-center justify-center space-y-8">
+          <div className="relative">
+            <div className="w-96 h-96 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-full opacity-20 absolute -top-8 -left-8"></div>
+            <div className="relative bg-white rounded-2xl p-8 shadow-xl">
+              <img 
+                src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                alt="Team collaboration"
+                className="w-full h-64 object-cover rounded-lg"
+              />
+              <div className="mt-6 text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Admin Dashboard</h3>
+                <p className="text-gray-600">Manage your AI-powered community platform with comprehensive analytics and insights.</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Login Form Card */}
-        <div className="bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-slate-700/50">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Administrator Access
-            </h2>
-            <p className="text-gray-400">
-              Sign in to access the administration dashboard
-            </p>
-          </div>
-
-          {/* Security Notice */}
-          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-            <div className="flex items-center space-x-2 text-amber-400">
-              <Shield className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm font-medium">Secure Administrator Login</span>
-            </div>
-            <p className="text-xs text-amber-300/80 mt-1">
-              This area is restricted to authorized personnel only. All access attempts are logged.
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center space-x-2 text-red-400">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="email"
-                name="email"
-                placeholder="Administrator Email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full pl-12 pr-4 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-700/50 backdrop-blur-sm transition-all text-white placeholder-gray-400"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Password Field */}
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Administrator Password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full pl-12 pr-12 py-3 border border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-700/50 backdrop-blur-sm transition-all text-white placeholder-gray-400"
-                required
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
-                disabled={isLoading}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-
-            {/* Forgot Password Link */}
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-                disabled={isLoading}
-              >
-                Request Access Recovery
-              </button>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <>
-                  <Shield className="w-5 h-5" />
-                  <span>Access Admin Panel</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-slate-600"></div>
-            <span className="px-4 text-sm text-gray-500">secure access</span>
-            <div className="flex-1 border-t border-slate-600"></div>
-          </div>
-
-          {/* Security Features */}
-          <div className="space-y-3">
-            <div className="bg-slate-700/30 border border-slate-600/50 text-gray-300 py-3 px-4 rounded-xl text-sm">
-              <div className="flex items-center space-x-2 mb-1">
-                <Shield className="w-4 h-4 text-indigo-400" />
-                <span className="font-medium">Multi-Factor Authentication</span>
+        {/* Right Side - Login Form */}
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-gray-900">AITribes</span>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">ADMIN</span>
               </div>
-              <p className="text-xs text-gray-400">Additional security verification may be required</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Sign In</h1>
+              <p className="text-gray-600">Access your dashboard to manage the community</p>
             </div>
 
-            <div className="bg-slate-700/30 border border-slate-600/50 text-gray-300 py-3 px-4 rounded-xl text-sm">
-              <div className="flex items-center space-x-2 mb-1">
-                <Database className="w-4 h-4 text-purple-400" />
-                <span className="font-medium">Audit Logging</span>
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-red-800 text-sm font-medium">Sign in failed</p>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-400">All administrative actions are monitored and logged</p>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="admin@aitribes.com"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your password"
+                    required
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    disabled={loading}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={loading}
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                    Remember me
+                  </label>
+                </div>
+                <button 
+                  type="button" 
+                  className="text-sm text-blue-600 hover:text-blue-500"
+                  disabled={loading}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <span>Sign In to Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Footer */}
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                Need help? Contact{' '}
+                <a href="#" className="text-blue-600 hover:text-blue-500">
+                  technical support
+                </a>
+              </p>
             </div>
           </div>
 
-          {/* User Login Link */}
+          {/* Quick Access */}
           <div className="mt-6 text-center">
-            <Link
-              to="/login"
-              className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+            <button 
+              onClick={() => navigate('/login')}
+              className="text-sm text-gray-600 hover:text-gray-900"
+              disabled={loading}
             >
-              ← Back to User Login
-            </Link>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-6 text-sm text-gray-500">
-          <p>© 2025 AITribes Administration. All rights reserved.</p>
-          <div className="flex justify-center space-x-4 mt-2 text-xs">
-            <button className="hover:text-indigo-400 transition-colors">Security Policy</button>
-            <span>•</span>
-            <button className="hover:text-indigo-400 transition-colors">Admin Guidelines</button>
-            <span>•</span>
-            <button className="hover:text-indigo-400 transition-colors">Support</button>
+              Go to User Login →
+            </button>
           </div>
         </div>
       </div>

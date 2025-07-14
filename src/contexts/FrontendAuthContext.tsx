@@ -1,33 +1,34 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase, authHelpers, AdminUser } from '../lib/supabase'
+import { supabase, authHelpers, FrontendUser } from '../lib/supabase'
 
-interface AuthContextType {
+interface FrontendAuthContextType {
   user: User | null
-  adminProfile: AdminUser | null
+  userProfile: FrontendUser | null
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, fullName?: string) => Promise<void>
   signOut: () => Promise<void>
-  isAdmin: boolean
+  isAuthenticated: boolean
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const FrontendAuthContext = createContext<FrontendAuthContextType | undefined>(undefined)
 
-export const useAuth = () => {
-  const context = useContext(AuthContext)
+export const useFrontendAuth = () => {
+  const context = useContext(FrontendAuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useFrontendAuth must be used within a FrontendAuthProvider')
   }
   return context
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FrontendAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [adminProfile, setAdminProfile] = useState<AdminUser | null>(null)
+  const [userProfile, setUserProfile] = useState<FrontendUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     // Get initial session
@@ -37,9 +38,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user || null)
 
       if (session?.user) {
-        const profile = await authHelpers.getAdminProfile(session.user.id)
-        setAdminProfile(profile)
-        setIsAdmin(profile?.is_active || false)
+        const profile = await authHelpers.getFrontendProfile(session.user.id)
+        setUserProfile(profile)
+        setIsAuthenticated(!!profile?.is_active)
       }
 
       setLoading(false)
@@ -54,12 +55,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user || null)
 
         if (session?.user) {
-          const profile = await authHelpers.getAdminProfile(session.user.id)
-          setAdminProfile(profile)
-          setIsAdmin(profile?.is_active || false)
+          const profile = await authHelpers.getFrontendProfile(session.user.id)
+          setUserProfile(profile)
+          setIsAuthenticated(!!profile?.is_active)
         } else {
-          setAdminProfile(null)
-          setIsAdmin(false)
+          setUserProfile(null)
+          setIsAuthenticated(false)
         }
 
         setLoading(false)
@@ -72,7 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setLoading(true)
     try {
-      await authHelpers.signInAdmin(email, password)
+      await authHelpers.signInUser(email, password)
+    } catch (error) {
+      setLoading(false)
+      throw error
+    }
+  }
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    setLoading(true)
+    try {
+      await authHelpers.signUpUser(email, password, fullName)
     } catch (error) {
       setLoading(false)
       throw error
@@ -91,17 +102,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
-    adminProfile,
+    userProfile,
     session,
     loading,
     signIn,
+    signUp,
     signOut,
-    isAdmin
+    isAuthenticated
   }
 
   return (
-    <AuthContext.Provider value={value}>
+    <FrontendAuthContext.Provider value={value}>
       {children}
-    </AuthContext.Provider>
+    </FrontendAuthContext.Provider>
   )
 }

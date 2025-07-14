@@ -4,42 +4,46 @@ import { useAuth } from '../contexts/AuthContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requireRole?: 'frontend_user' | 'backend_admin' | 'moderator'
+  requireAdmin?: boolean
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireRole }) => {
-  const { isAuthenticated, isLoading, user } = useAuth()
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requireAdmin = false 
+}) => {
+  const { user, isAdmin, loading } = useAuth()
   const location = useLocation()
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
-    // Redirect to appropriate login based on the route
-    const loginPath = location.pathname.startsWith('/admin') ? '/admin/login' : '/login'
-    return <Navigate to={loginPath} state={{ from: location }} replace />
+  if (!user) {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />
   }
 
-  // Check role requirements
-  if (requireRole && user) {
-    if (requireRole === 'frontend_user' && user.role !== 'frontend_user') {
-      // Frontend users only - redirect non-frontend users to admin login
-      return <Navigate to="/admin/login" replace />
-    }
-    
-    if ((requireRole === 'backend_admin' || requireRole === 'moderator') && 
-        !['backend_admin', 'moderator'].includes(user.role)) {
-      // Admin/moderator required - redirect to frontend login
-      return <Navigate to="/login" replace />
-    }
+  if (requireAdmin && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don't have admin privileges to access this page.</p>
+          <button
+            onClick={() => window.location.href = '/admin/login'}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return <>{children}</>

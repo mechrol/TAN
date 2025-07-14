@@ -1,406 +1,420 @@
-import React, { useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useFrontendAuth } from '../contexts/FrontendAuthContext'
 import { 
-  MessageCircle, 
+  MessageSquare, 
   Heart, 
   Share2, 
-  Image, 
-  Mic, 
-  Video, 
-  FileText,
-  Trophy,
-  Users,
-  BookOpen,
-  Calendar,
-  Award,
+  MoreHorizontal, 
+  Send,
+  Smile,
+  Camera,
+  Mic,
+  Bot,
+  User,
   TrendingUp,
-  Bell,
-  Settings,
-  Copy,
-  ExternalLink,
-  LogOut
+  Clock,
+  Users,
+  LogOut,
+  Settings
 } from 'lucide-react'
 
-const Frontend: React.FC = () => {
-  const { user, logout } = useAuth()
-  const [postText, setPostText] = useState('')
-  const [referralLink, setReferralLink] = useState('https://homohumanicus.aitrbes.app/r/janusz')
-  const [showCopySuccess, setShowCopySuccess] = useState(false)
+const Frontend = () => {
+  const { userProfile, signOut } = useFrontendAuth()
+  const navigate = useNavigate()
+  const [selectedPoll, setSelectedPoll] = useState<number | null>(null)
+  const [aiChatActive, setAiChatActive] = useState(false)
+  const [chatMessages, setChatMessages] = useState<Array<{id: number, sender: 'user' | 'ai', message: string, timestamp: string}>>([])
+  const [currentMessage, setCurrentMessage] = useState('')
 
-  const handleCopyReferralLink = () => {
-    navigator.clipboard.writeText(referralLink)
-    setShowCopySuccess(true)
-    setTimeout(() => setShowCopySuccess(false), 2000)
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      navigate('/login')
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
-  const handleLogout = async () => {
-    await logout()
-  }
-
-  const pointsActivities = [
-    { action: 'Make a post to get', points: 5 },
-    { action: 'Comment on a post to get', points: 1 },
-    { action: 'Like a comment or post to get', points: 1 },
-    { action: 'Upload Profile picture to get', points: 1 },
-    { action: 'Mark complete a lesson to get', points: 1 },
-    { action: 'Viral share of referral link', points: 1 }
-  ]
-
-  const timelineActivities = [
+  const polls = [
     {
-      time: '10:52 AM',
-      user: user?.firstName || 'User',
-      action: 'added a new post',
-      date: 'May 8, 2024'
+      id: 1,
+      author: "Sarah Chen",
+      avatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150",
+      time: "2 hours ago",
+      question: "What are you thinking about right now?",
+      options: [
+        { text: "Work and career goals", votes: 45, percentage: 35 },
+        { text: "Personal relationships", votes: 38, percentage: 30 },
+        { text: "Future plans and dreams", votes: 32, percentage: 25 },
+        { text: "Current challenges", votes: 13, percentage: 10 }
+      ],
+      totalVotes: 128,
+      comments: 23,
+      aiConversations: 12
     },
     {
-      time: '04:31 PM',
-      user: user?.firstName || 'User',
-      action: 'added a new post',
-      date: 'May 22, 2024'
+      id: 2,
+      author: "Alex Rodriguez",
+      avatar: "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=150",
+      time: "4 hours ago",
+      question: "How do you feel about your current life situation?",
+      options: [
+        { text: "Optimistic and excited", votes: 67, percentage: 40 },
+        { text: "Content but seeking growth", votes: 50, percentage: 30 },
+        { text: "Uncertain about direction", votes: 33, percentage: 20 },
+        { text: "Overwhelmed and stressed", votes: 17, percentage: 10 }
+      ],
+      totalVotes: 167,
+      comments: 34,
+      aiConversations: 18
     },
     {
-      time: '03:27 PM',
-      user: user?.firstName || 'User',
-      action: 'joined Higher School of Banking',
-      date: 'May 24, 2024'
+      id: 3,
+      author: "Maya Patel",
+      avatar: "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=150",
+      time: "6 hours ago",
+      question: "What emotion dominates your daily experience?",
+      options: [
+        { text: "Joy and gratitude", votes: 42, percentage: 28 },
+        { text: "Curiosity and wonder", votes: 38, percentage: 25 },
+        { text: "Anxiety and worry", votes: 35, percentage: 23 },
+        { text: "Determination and focus", votes: 36, percentage: 24 }
+      ],
+      totalVotes: 151,
+      comments: 28,
+      aiConversations: 15
     }
   ]
 
+  const handlePollVote = (pollId: number, optionIndex: number) => {
+    setSelectedPoll(pollId)
+    // Simulate AI conversation trigger
+    setTimeout(() => {
+      setAiChatActive(true)
+      setChatMessages([
+        {
+          id: 1,
+          sender: 'ai',
+          message: "I noticed you selected that option. That's really interesting! Can you tell me more about what's behind that feeling?",
+          timestamp: new Date().toLocaleTimeString()
+        }
+      ])
+    }, 1000)
+  }
+
+  const sendMessage = () => {
+    if (!currentMessage.trim()) return
+
+    const newUserMessage = {
+      id: chatMessages.length + 1,
+      sender: 'user' as const,
+      message: currentMessage,
+      timestamp: new Date().toLocaleTimeString()
+    }
+
+    setChatMessages(prev => [...prev, newUserMessage])
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponses = [
+        "That's a profound insight. How long have you been feeling this way?",
+        "I can sense there's more depth to this. What do you think triggered these feelings?",
+        "It sounds like you're going through a significant moment. How are you processing this?",
+        "That's completely valid. What would help you feel more aligned with your authentic self?",
+        "I hear you. Sometimes our emotions are trying to tell us something important. What do you think yours are saying?"
+      ]
+      
+      const aiMessage = {
+        id: chatMessages.length + 2,
+        sender: 'ai' as const,
+        message: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        timestamp: new Date().toLocaleTimeString()
+      }
+      
+      setChatMessages(prev => [...prev, aiMessage])
+    }, 1500)
+
+    setCurrentMessage('')
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-pink-600">Subscription</h1>
-            <span className="text-xl font-bold text-pink-600">Services</span>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
-            <button className="p-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <Settings className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="p-2 text-gray-600 hover:text-red-600 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-            {user && (
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <img 
-                  src={user.avatar} 
-                  alt={user.fullName}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {user.firstName} {user.lastName}
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  FeelSpace
                 </span>
               </div>
-            )}
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Bot className="w-5 h-5" />
+              </button>
+              
+              {/* User Profile Dropdown */}
+              <div className="relative group">
+                <button className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium">
+                    {userProfile?.full_name || userProfile?.username || 'User'}
+                  </span>
+                </button>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">
+                      {userProfile?.full_name || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-600">@{userProfile?.username}</p>
+                    <p className="text-xs text-gray-600">{userProfile?.email}</p>
+                  </div>
+                  <div className="p-1">
+                    <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Coins Header */}
-      <div className="bg-gradient-to-r from-pink-100 to-purple-100 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-center">
-            <div className="flex items-end space-x-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((stack, index) => (
-                <div key={index} className="flex flex-col items-center">
-                  {Array.from({ length: stack }).map((_, coinIndex) => (
-                    <div
-                      key={coinIndex}
-                      className="w-12 h-3 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full border border-yellow-500 mb-0.5 shadow-sm"
-                      style={{
-                        transform: `translateY(${coinIndex * -2}px)`
-                      }}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Welcome Message */}
+        {userProfile && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8 border border-blue-100">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Welcome back, {userProfile.full_name || userProfile.username}! 👋
+            </h2>
+            <p className="text-gray-600">
+              Ready to share your feelings and connect with the community? Let's explore what's on your mind today.
+            </p>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Sidebar */}
-          <div className="lg:col-span-1">
-            {/* School Profile Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">Higher School of Banking</h3>
-                </div>
-              </div>
-              
-              <p className="text-sm text-gray-600 mb-4">
-                Higher School of Banking is your hub for mentoring, connections, and growth. Get to know your group, connect with like-minded entrepreneurs, and build success together. No self-promotion—just real conversations, real impact on the common ground of shared income.
-              </p>
-
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">4</div>
-                  <div className="text-xs text-gray-500 uppercase">Posts</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">1</div>
-                  <div className="text-xs text-gray-500 uppercase">Members</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">1</div>
-                  <div className="text-xs text-gray-500 uppercase">Course</div>
-                </div>
-              </div>
-
-              {/* Navigation Menu */}
-              <nav className="mt-6 space-y-2">
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-pink-600 bg-pink-50 rounded-lg">
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Feed</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm font-medium">Members</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm font-medium">Blogs</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-sm font-medium">Events</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <BookOpen className="w-4 h-4" />
-                  <span className="text-sm font-medium">Courses / Products</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="text-sm font-medium">Leaderboard</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <Award className="w-4 h-4" />
-                  <span className="text-sm font-medium">Rewards</span>
-                </button>
-              </nav>
+        {/* Create Poll Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+              <User className="w-6 h-6 text-white" />
             </div>
-
-            {/* Timeline */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-bold text-gray-900 mb-2">Timeline</h3>
-              <p className="text-sm text-gray-500 mb-4">Latest activities</p>
-              
-              <div className="space-y-4">
-                {timelineActivities.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <img 
-                      src={user?.avatar || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
-                      alt="User"
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm">
-                        <span className="font-medium text-blue-600">{activity.user}</span>
-                        <span className="text-gray-600"> {activity.action}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">{activity.date}</div>
-                    </div>
-                    <div className="text-xs text-gray-500">{activity.time}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Post Creation */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-start space-x-3">
-                <img 
-                  src={user?.avatar || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
-                  alt="User"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <textarea
-                    value={postText}
-                    onChange={(e) => setPostText(e.target.value)}
-                    placeholder={`What are you thinking about? ${user?.firstName || 'User'}`}
-                    className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                  />
-                  
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center space-x-4">
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <FileText className="w-4 h-4" />
-                        <span className="text-sm">Text</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <Image className="w-4 h-4" />
-                        <span className="text-sm">Photo</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <Mic className="w-4 h-4" />
-                        <span className="text-sm">Audio</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <Video className="w-4 h-4" />
-                        <span className="text-sm">Video</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <FileText className="w-4 h-4" />
-                        <span className="text-sm">Poll</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sample Post */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-start space-x-3 mb-4">
-                <img 
-                  src={user?.avatar || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
-                  alt={user?.firstName || 'User'}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-900">{user?.firstName || 'User'}</span>
-                    <span className="px-2 py-1 bg-pink-100 text-pink-600 text-xs rounded-full">Member</span>
-                  </div>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-gray-800 mb-4">
-                  Demo password for logging into the Game - Decision Tree is: <span className="text-blue-600 font-medium">admin359</span>
-                </p>
-                <p className="text-gray-600 text-sm mb-4">
-                  Do not share this password with anyone. You can promote the link to the game and 
-                  to this community available on the right side of the menu, the so-called Referral Link
-                </p>
-                <p className="text-gray-600 text-sm mb-4">
-                  Hasło demo do logowania do Gry - Drzewo decyzyjne to: <span className="text-blue-600 font-medium">admin359</span>
-                </p>
-                <p className="text-gray-600 text-sm">
-                  Nie udostępniaj tego hasła nikomu. Możesz promować link do gry i do tej wspólnoty 
-                  dostępny po prawej stronie menu, tzw Referral Link
-                </p>
-              </div>
-
-              {/* Game Banner */}
-              <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white mb-4">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="text-green-400 text-sm">Homo</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm opacity-90 mb-1">HUMANICUS</div>
-                  <div className="text-lg font-bold mb-1">HomoHumanicus</div>
-                  <div className="flex items-center justify-center space-x-2 mb-3">
-                    <Trophy className="w-5 h-5 text-yellow-400" />
-                    <span className="text-xl font-bold">DRZEWO DECYZYJNE</span>
-                  </div>
-                  <div className="text-xs opacity-75 mb-2">STRATEGIC GAME</div>
-                  <p className="text-xs opacity-90 leading-relaxed">
-                    Rozwijaj swoją inteligencję strategiczną podejmując decyzje wpływające na przyszłość 
-                    organizacji w różnych scenariuszach biznesowych i ideologicznych.
-                  </p>
-                </div>
-              </div>
-
-              {/* Post Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex items-center space-x-6">
-                  <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="text-sm">0 Comments</span>
-                  </button>
-                  <button className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors">
-                    <Heart className="w-4 h-4" />
-                    <span className="text-sm">Likes</span>
-                  </button>
-                </div>
-                <button className="text-gray-600 hover:text-blue-600 transition-colors">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Points System */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">My Points</h3>
-                <div className="bg-pink-100 text-pink-600 px-3 py-1 rounded-full text-sm font-bold">
-                  5
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {pointsActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{activity.action}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border border-gray-300 rounded"></div>
-                      <span className="text-sm font-medium text-gray-900">{activity.points} Points</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Referral Link */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Referral Link</h3>
-              
-              <div className="mb-4">
-                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                  <input
-                    type="text"
-                    value={referralLink}
-                    readOnly
-                    className="flex-1 bg-transparent text-sm text-gray-600 outline-none"
-                  />
-                  <button
-                    onClick={handleCopyReferralLink}
-                    className="px-3 py-1 bg-pink-600 text-white text-sm rounded hover:bg-pink-700 transition-colors"
-                  >
-                    {showCopySuccess ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 mb-4">
-                Earn 10 points for every new sign up to the community through your referral link
-              </p>
-
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <ExternalLink className="w-4 h-4" />
-                <span className="text-sm">Share Link</span>
+            <div className="flex-1">
+              <button className="w-full text-left p-4 bg-gray-50 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors">
+                What are you feeling right now? Share with the community...
               </button>
             </div>
           </div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center space-x-4">
+              <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                <Camera className="w-5 h-5" />
+                <span>Photo</span>
+              </button>
+              <button className="flex items-center space-x-2 text-gray-600 hover:text-purple-600">
+                <Bot className="w-5 h-5" />
+                <span>AI Poll</span>
+              </button>
+              <button className="flex items-center space-x-2 text-gray-600 hover:text-green-600">
+                <Smile className="w-5 h-5" />
+                <span>Mood</span>
+              </button>
+            </div>
+            <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all">
+              Create Poll
+            </button>
+          </div>
+        </div>
+
+        {/* Polls Feed */}
+        <div className="space-y-6">
+          {polls.map((poll) => (
+            <div key={poll.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Poll Header */}
+              <div className="p-6 pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <img 
+                      src={poll.avatar} 
+                      alt={poll.author}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{poll.author}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>{poll.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <h2 className="text-lg font-medium text-gray-900 mb-4">{poll.question}</h2>
+              </div>
+
+              {/* Poll Options */}
+              <div className="px-6 pb-4 space-y-3">
+                {poll.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePollVote(poll.id, index)}
+                    className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-900 font-medium group-hover:text-blue-700">
+                        {option.text}
+                      </span>
+                      <span className="text-sm text-gray-600 font-semibold">
+                        {option.percentage}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+                        style={{ width: `${option.percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                      <span>{option.votes} votes</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Poll Stats */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1">
+                      <Users className="w-4 h-4" />
+                      <span>{poll.totalVotes} total votes</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <MessageSquare className="w-4 h-4" />
+                      <span>{poll.comments} comments</span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-purple-600 font-medium">
+                      <Bot className="w-4 h-4" />
+                      <span>{poll.aiConversations} AI conversations</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="px-6 py-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <button className="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition-colors">
+                      <Heart className="w-5 h-5" />
+                      <span>Like</span>
+                    </button>
+                    <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-500 transition-colors">
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Comment</span>
+                    </button>
+                    <button className="flex items-center space-x-2 text-gray-600 hover:text-green-500 transition-colors">
+                      <Share2 className="w-5 h-5" />
+                      <span>Share</span>
+                    </button>
+                  </div>
+                  <button className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all">
+                    <Bot className="w-4 h-4" />
+                    <span>Talk to AI</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* AI Chat Modal */}
+      {aiChatActive && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md h-96 flex flex-col">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">AI Companion</h3>
+                  <p className="text-sm text-gray-500">Exploring your feelings</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAiChatActive(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-xs px-4 py-2 rounded-lg ${
+                    msg.sender === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-900'
+                  }`}>
+                    <p className="text-sm">{msg.message}</p>
+                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {msg.timestamp}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder="Share your thoughts..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button 
+                  onClick={sendMessage}
+                  className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

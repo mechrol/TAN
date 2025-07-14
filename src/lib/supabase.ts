@@ -9,145 +9,149 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Auth helper functions
-export const auth = {
-  // Sign up with email and password
-  signUp: async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
+// Types
+export interface AdminUser {
+  id: string
+  email: string
+  full_name: string | null
+  role: 'admin' | 'super_admin' | 'moderator'
+  is_active: boolean
+  last_login: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FrontendUser {
+  id: string
+  email: string
+  username: string | null
+  full_name: string | null
+  avatar_url: string | null
+  bio: string | null
+  is_active: boolean
+  last_login: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Auth helpers
+export const authHelpers = {
+  // Sign in admin user
+  async signInAdmin(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) throw error
+
+    // Update last login
+    if (data.user) {
+      await supabase.rpc('update_admin_last_login', { user_id: data.user.id })
+    }
+
+    return data
+  },
+
+  // Sign in frontend user
+  async signInUser(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) throw error
+
+    // Update last login
+    if (data.user) {
+      await supabase.rpc('update_frontend_last_login', { user_id: data.user.id })
+    }
+
+    return data
+  },
+
+  // Sign up frontend user
+  async signUpUser(email: string, password: string, fullName?: string) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          full_name: `${userData.firstName} ${userData.lastName}`
+          full_name: fullName
         }
       }
     })
-    return { data, error }
-  },
 
-  // Sign in with email and password
-  signIn: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { data, error }
+    if (error) throw error
+    return data
   },
 
   // Sign out
-  signOut: async () => {
+  async signOut() {
     const { error } = await supabase.auth.signOut()
-    return { error }
-  },
-
-  // Get current user
-  getCurrentUser: async () => {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
+    if (error) throw error
   },
 
   // Get current session
-  getSession: async () => {
+  async getSession() {
     const { data: { session }, error } = await supabase.auth.getSession()
-    return { session, error }
+    if (error) throw error
+    return session
   },
 
-  // Listen to auth changes
-  onAuthStateChange: (callback: (event: string, session: any) => void) => {
-    return supabase.auth.onAuthStateChange(callback)
-  }
-}
-
-// Database helper functions
-export const db = {
-  // Get user profile
-  getUserProfile: async (userId: string) => {
+  // Get admin user profile
+  async getAdminProfile(userId: string): Promise<AdminUser | null> {
     const { data, error } = await supabase
-      .from('profiles')
+      .from('admin_users')
       .select('*')
       .eq('id', userId)
       .single()
-    return { data, error }
+
+    if (error) {
+      console.error('Error fetching admin profile:', error)
+      return null
+    }
+
+    return data
   },
 
-  // Update user profile
-  updateUserProfile: async (userId: string, updates: any) => {
+  // Get frontend user profile
+  async getFrontendProfile(userId: string): Promise<FrontendUser | null> {
     const { data, error } = await supabase
-      .from('profiles')
-      .upsert({ id: userId, ...updates })
-      .select()
+      .from('frontend_users')
+      .select('*')
+      .eq('id', userId)
       .single()
-    return { data, error }
-  },
 
-  // Update last login
-  updateLastLogin: async (userId: string) => {
-    const { data, error } = await supabase
-      .rpc('update_last_login', { user_id: userId })
-    return { data, error }
+    if (error) {
+      console.error('Error fetching frontend profile:', error)
+      return null
+    }
+
+    return data
   },
 
   // Check if user is admin
-  isUserAdmin: async (userId: string) => {
+  async isAdmin(userId: string): Promise<boolean> {
     const { data, error } = await supabase
-      .rpc('is_admin', { user_id: userId })
-    return { data, error }
-  },
-
-  // Track community visit
-  trackCommunityVisit: async (userId: string, communityId: number) => {
-    const { data, error } = await supabase
-      .from('community_visits')
-      .insert({
-        user_id: userId,
-        community_id: communityId,
-        visited_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-    return { data, error }
-  },
-
-  // Get user community visits
-  getUserCommunityVisits: async (userId: string) => {
-    const { data, error } = await supabase
-      .from('community_visits')
-      .select('*')
-      .eq('user_id', userId)
-      .order('visited_at', { ascending: false })
-    return { data, error }
-  },
-
-  // Admin functions - Get all users (admin only)
-  getAllUsers: async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-    return { data, error }
-  },
-
-  // Admin functions - Update user role (admin only)
-  updateUserRole: async (userId: string, role: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ role, updated_at: new Date().toISOString() })
+      .from('admin_users')
+      .select('is_active')
       .eq('id', userId)
-      .select()
       .single()
-    return { data, error }
+
+    if (error) return false
+    return data?.is_active || false
   },
 
-  // Admin functions - Deactivate user (admin only)
-  deactivateUser: async (userId: string) => {
+  // Check if user is frontend user
+  async isFrontendUser(userId: string): Promise<boolean> {
     const { data, error } = await supabase
-      .from('profiles')
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .from('frontend_users')
+      .select('is_active')
       .eq('id', userId)
-      .select()
       .single()
-    return { data, error }
+
+    if (error) return false
+    return data?.is_active || false
   }
 }
