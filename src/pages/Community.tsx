@@ -13,7 +13,8 @@ import {
   Users,
   MessageSquare,
   Clock,
-  Activity
+  Activity,
+  Rss
 } from 'lucide-react'
 
 interface Community {
@@ -110,13 +111,12 @@ const Community: React.FC = () => {
     // Handle specific actions
     switch (action) {
       case 'Edit':
-        // Edit community logic
-        console.log(`Editing community: ${community?.name}`)
+        // Navigate to community view page for editing
+        navigate(`/community/${communityId}`)
         break
       case 'Visit':
-        // Navigate to Login page for Visit action
-        console.log(`Visiting community: ${community?.name} - Redirecting to login`)
-        navigate('/login')
+        // Navigate to community view page
+        navigate(`/community/${communityId}`)
         break
       case 'Customize Community':
         // Navigate to customize community page
