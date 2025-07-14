@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   Plus, 
   Search, 
@@ -9,7 +11,9 @@ import {
   Palette,
   Copy,
   Users,
-  MessageSquare
+  MessageSquare,
+  Clock,
+  Activity
 } from 'lucide-react'
 
 interface Community {
@@ -19,9 +23,13 @@ interface Community {
   image: string
   date: string
   isActive: boolean
+  visitCount?: number
+  lastVisited?: string
 }
 
 const Community: React.FC = () => {
+  const navigate = useNavigate()
+  const { user, visitCommunity, getUserVisits } = useAuth()
   const [showActionDropdown, setShowActionDropdown] = useState<number | null>(null)
   const [communities, setCommunities] = useState<Community[]>([
     {
@@ -30,7 +38,9 @@ const Community: React.FC = () => {
       category: 'Subscription Services',
       image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&dpr=1',
       date: '28 Feb, 2025',
-      isActive: true
+      isActive: true,
+      visitCount: 0,
+      lastVisited: undefined
     },
     {
       id: 2,
@@ -38,7 +48,9 @@ const Community: React.FC = () => {
       category: 'Health and Wellness',
       image: 'https://images.pexels.com/photos/3822622/pexels-photo-3822622.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&dpr=1',
       date: '13 Feb, 2025',
-      isActive: true
+      isActive: true,
+      visitCount: 0,
+      lastVisited: undefined
     },   
   ])
 
@@ -50,6 +62,29 @@ const Community: React.FC = () => {
     'AI Member Feed',
     'AI Custom Prompt Feed'
   ]
+
+  // Load user visits on component mount
+  useEffect(() => {
+    if (user) {
+      const visits = getUserVisits()
+      
+      // Update communities with visit data
+      setCommunities(prevCommunities =>
+        prevCommunities.map(community => {
+          const communityVisits = visits.filter(visit => visit.communityId === community.id)
+          const lastVisit = communityVisits.length > 0 
+            ? communityVisits[communityVisits.length - 1] 
+            : null
+          
+          return {
+            ...community,
+            visitCount: communityVisits.length,
+            lastVisited: lastVisit?.visitDate
+          }
+        })
+      )
+    }
+  }, [user, getUserVisits])
 
   // Function to truncate text to 25 characters
   const truncateText = (text: string, maxLength: number = 25) => {
@@ -68,33 +103,54 @@ const Community: React.FC = () => {
     console.log(`Toggled activity for community ID: ${communityId}`)
   }
 
-  const handleActionClick = (communityId: number, action: string) => {
+  const handleActionClick = async (communityId: number, action: string) => {
     const community = communities.find(c => c.id === communityId)
     console.log(`Action "${action}" clicked for community: ${community?.name}`)
     
-    // Tutaj można dodać konkretną logikę dla każdej akcji
+    // Handle specific actions
     switch (action) {
       case 'Edit':
-        // Logika edycji społeczności
+        // Edit community logic
+        console.log(`Editing community: ${community?.name}`)
         break
       case 'Visit':
-        // Logika odwiedzenia społeczności
+        // Navigate to Login page for Visit action
+        console.log(`Visiting community: ${community?.name} - Redirecting to login`)
+        navigate('/login')
         break
       case 'Customize Community':
-        // Logika personalizacji społeczności
+        // Navigate to customize community page
+        navigate(`/community/${communityId}/customize`)
         break
       case 'Clone':
-        // Logika klonowania społeczności
+        // Clone community logic
+        console.log(`Cloning community: ${community?.name}`)
         break
       case 'AI Member Feed':
-        // Logika AI Member Feed
+        // AI Member Feed logic
+        console.log(`Opening AI Member Feed for: ${community?.name}`)
         break
       case 'AI Custom Prompt Feed':
-        // Logika AI Custom Prompt Feed
+        // AI Custom Prompt Feed logic
+        console.log(`Opening AI Custom Prompt Feed for: ${community?.name}`)
         break
     }
     
     setShowActionDropdown(null)
+  }
+
+  const formatLastVisited = (dateString?: string) => {
+    if (!dateString) return 'Never visited'
+    
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return 'Just now'
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    if (diffInHours < 48) return 'Yesterday'
+    
+    return date.toLocaleDateString()
   }
 
   return (
@@ -102,13 +158,21 @@ const Community: React.FC = () => {
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Left side - Community title with count */}
+          {/* Left side - Community title with count and user info */}
           <div className="flex items-center space-x-3">
             <Settings className="w-6 h-6 text-gray-600" />
             <h1 className="text-xl font-semibold text-gray-900">Community</h1>
             <span className="bg-blue-600 text-white text-sm px-2 py-1 rounded-full font-medium">
               {communities.length}
             </span>
+            {user && (
+              <div className="flex items-center space-x-2 ml-4 px-3 py-1 bg-green-50 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-green-700">
+                  {user.firstName} {user.lastName}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Right side - Search and New Community */}
@@ -137,12 +201,19 @@ const Community: React.FC = () => {
           {communities.map((community) => (
             <div key={community.id} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               {/* Community Image */}
-              <div className="h-48 bg-gray-200">
+              <div className="h-48 bg-gray-200 relative">
                 <img 
                   src={community.image} 
                   alt={community.name}
                   className="w-full h-full object-cover"
                 />
+                {/* Visit Stats Overlay */}
+                {user && community.visitCount !== undefined && (
+                  <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs flex items-center space-x-1">
+                    <Eye className="w-3 h-3" />
+                    <span>{community.visitCount}</span>
+                  </div>
+                )}
               </div>
 
               {/* Community Content */}
@@ -152,9 +223,24 @@ const Community: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       {community.name}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-3">
+                    <p className="text-sm text-gray-500 mb-2">
                       {community.category}
                     </p>
+                    
+                    {/* Visit Information */}
+                    {user && (
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-3">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatLastVisited(community.lastVisited)}</span>
+                        {community.visitCount && community.visitCount > 0 && (
+                          <>
+                            <span>•</span>
+                            <Activity className="w-3 h-3" />
+                            <span>{community.visitCount} visits</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -197,10 +283,16 @@ const Community: React.FC = () => {
                               <button
                                 key={index}
                                 onClick={() => handleActionClick(community.id, item)}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 overflow-hidden text-ellipsis whitespace-nowrap"
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 overflow-hidden text-ellipsis whitespace-nowrap flex items-center space-x-2"
                                 title={item}
                               >
-                                {truncateText(item)}
+                                {item === 'Visit' && <Eye className="w-3 h-3" />}
+                                {item === 'Edit' && <Edit className="w-3 h-3" />}
+                                {item === 'Customize Community' && <Palette className="w-3 h-3" />}
+                                {item === 'Clone' && <Copy className="w-3 h-3" />}
+                                {item === 'AI Member Feed' && <Users className="w-3 h-3" />}
+                                {item === 'AI Custom Prompt Feed' && <MessageSquare className="w-3 h-3" />}
+                                <span>{truncateText(item)}</span>
                               </button>
                             ))}
                           </div>
